@@ -38067,7 +38067,7 @@ function getTarPath(args, compressionMethod) {
 function execTar(args, compressionMethod, cwd) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield exec_1.exec(`"${yield getTarPath(args, compressionMethod)}"`, args, { cwd });
+            yield exec_1.exec(`sudo ${yield getTarPath(args, compressionMethod)}`, args, { cwd });
         }
         catch (error) {
             throw new Error(`Tar failed with error: ${error === null || error === void 0 ? void 0 : error.message}`);
@@ -47303,10 +47303,6 @@ function run() {
                 utils.logWarning(`Error retrieving key from state.`);
                 return;
             }
-            if (utils.isExactKeyMatch(primaryKey, state)) {
-                core.info(`Cache hit occurred on the primary key ${primaryKey}, not saving cache.`);
-                return;
-            }
             const cachePaths = utils.getInputAsArray(constants_1.Inputs.Path, {
                 required: true
             });
@@ -47546,9 +47542,6 @@ function saveCache(paths, key, options) {
             }
             else if ((reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.statusCode) === 400) {
                 throw new Error((_d = (_c = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.error) === null || _c === void 0 ? void 0 : _c.message) !== null && _d !== void 0 ? _d : `Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the data cap limit, not saving cache.`);
-            }
-            else {
-                throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache. More details: ${(_e = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.error) === null || _e === void 0 ? void 0 : _e.message}`);
             }
             core.debug(`Saving Cache (ID: ${cacheId})`);
             yield cacheHttpClient.saveCache(cacheId, archivePath, options);
