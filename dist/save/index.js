@@ -3567,6 +3567,42 @@ function saveCache(cacheId, archivePath, options) {
     });
 }
 exports.saveCache = saveCache;
+
+function deleteCache(key) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const httpClient = createHttpClient();
+
+        const resource = `caches?key=${encodeURIComponent(key)}`;
+
+        const repo = process.env['GITHUB_REPOSITORY'] || '';
+
+        const token = process.env['ACTIONS_RUNTIME_TOKEN'] || '';
+
+        const additionalHeaders = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": `Bearer ${token}`,
+            "X-GitHub-Api-Version": "2022-11-28"
+        };
+
+        const url = `https://api.github.com/repos/${repo}/actions/${resource}`;
+
+        const deleteCacheResponse = yield requestUtils_1.retryHttpClientResponse('deleteCache', () => __awaiter(this, void 0, void 0, function* () {
+            return httpClient.del(url, additionalHeaders);
+        }));
+
+        if (!requestUtils_1.isSuccessStatusCode(deleteCacheResponse.message.statusCode)) {
+            core.info(`url: ${url}`);
+            if (token == '') {
+                core.info(`token is invalid`);
+            }
+            throw new Error(`Cache service responded with ${deleteCacheResponse.message.statusCode} during cache deletion.`);
+        }
+
+        core.info('Stale cache deleted successfully');
+    });
+}
+
+exports.deleteCache = deleteCache;
 //# sourceMappingURL=cacheHttpClient.js.map
 
 /***/ }),
@@ -47542,6 +47578,10 @@ function saveCache(paths, key, options) {
             }
             else if ((reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.statusCode) === 400) {
                 throw new Error((_d = (_c = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.error) === null || _c === void 0 ? void 0 : _c.message) !== null && _d !== void 0 ? _d : `Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the data cap limit, not saving cache.`);
+            }
+            else {
+                core.debug(`Deleting Previous Iteration of Cache (Key: ${key})`);
+                yield cacheHttpClient.deleteCache(key);
             }
             core.debug(`Saving Cache (ID: ${cacheId})`);
             yield cacheHttpClient.saveCache(cacheId, archivePath, options);
